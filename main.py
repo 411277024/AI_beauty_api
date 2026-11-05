@@ -163,6 +163,26 @@ class UserFeatures(BaseModel):
     occasion: str
 
 
+# 前端下拉選單送來的是英文代碼（round_eye、double…），先換成中文再交給 Gemini，
+# 否則 AI 會把代碼原樣寫進報告裡（例如「圓眼（round_eye）」）
+LABELS = {
+    "faceShape": {"round": "圓臉", "square": "方形臉", "long": "長臉", "oval": "鵝蛋臉", "heart": "心形臉",
+                  "diamond": "菱形臉", "hexagonal": "六角形臉", "squareround": "方圓臉"},
+    "eyeShape": {"almond": "杏仁眼", "round_eye": "圓眼", "phoenix": "丹鳳眼", "peach": "桃花眼",
+                 "fox": "狐狸眼", "dog": "狗狗眼", "narrow": "細長眼"},
+    "eyelidType": {"double": "雙眼皮", "single": "單眼皮", "hooded": "內雙"},
+    "lipShape": {"thin": "薄唇", "thick": "厚唇", "smile": "微笑唇", "m_shape": "M 字唇", "natural_lip": "自然唇形"},
+    "hairLength": {"short": "短髮", "medium": "中長髮", "long": "長髮"},
+    "occasion": {"daily": "日常通勤", "date": "浪漫約會", "interview": "面試職場", "travel": "旅遊打卡",
+                 "concert": "音樂祭／派對", "night_out": "酒吧夜店", "wedding_guest": "婚禮宴會", "photoshoot": "專業棚拍"},
+}
+# 畫圖用英文描述效果比較好
+EYELID_EN = {"double": "double eyelid", "single": "monolid", "hooded": "hooded inner-double eyelid"}
+EYE_EN = {"almond": "almond-shaped eyes", "round_eye": "round eyes", "phoenix": "upturned phoenix eyes",
+          "peach": "peach-blossom eyes", "fox": "fox eyes with upturned outer corners",
+          "dog": "downturned puppy eyes", "narrow": "narrow elongated eyes"}
+
+
 # Gemini 失敗或沒設定金鑰時使用的備用報告
 FALLBACK_REPORT = {
         "best_hairstyles": ["側分大波浪", "高馬尾辮髮", "復古法式捲"],
@@ -186,6 +206,13 @@ FALLBACK_REPORT = {
 @app.post("/api/recommend", dependencies=[Depends(rate_limit)])
 def get_recommendation(features: UserFeatures):
     print("====== 開始處理報告 ======", flush=True)
+
+    # 代碼 → 中文（給 Gemini）；畫圖要用的英文描述先存起來
+    eyelid_en = EYELID_EN.get(features.eyelidType, features.eyelidType)
+    eye_en = EYE_EN.get(features.eyeShape, features.eyeShape)
+    for field, table in LABELS.items():
+        value = getattr(features, field)
+        setattr(features, field, table.get(value, value))
 
     # ==========================================
     # 💄 1. Step 1 (底妝與修容) 文案拼圖系統
@@ -297,7 +324,7 @@ def get_recommendation(features: UserFeatures):
             eye_makeup_desc = report_data["makeup_steps"][1]["desc"]
             image_prompt = (
                 "Professional macro beauty photography, extreme close-up of a beautiful East Asian woman's eyes. "
-                f"Subject's eye features: {features.eyelidType} and {features.eyeShape}. "
+                f"Subject's eye features: {eyelid_en} and {eye_en}. "
                 f"Makeup style description: {eye_makeup_desc}. "
                 "Sharp focus on eye makeup, professional studio lighting, high resolution."
             )
@@ -329,5 +356,3 @@ if os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
     if os.path.isfile("static/index.html"):
         app.mount("/", StaticFiles(directory="static", html=True), name="site")
-
-
