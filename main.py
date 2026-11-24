@@ -42,7 +42,7 @@ ALLOWED_ORIGINS = [
     o.strip()
     for o in os.getenv(
         "ALLOWED_ORIGINS",
-        "https://411277024.github.io,http://127.0.0.1:8000,http://localhost:8000,http://localhost:5173,https://beauty-react-sooty.vercel.app/",
+        "https://411277024.github.io,http://127.0.0.1:8000,http://localhost:8000,http://localhost:5173,https://beauty-react-sooty.vercel.app",
     ).split(",")
     if o.strip()
 ]
