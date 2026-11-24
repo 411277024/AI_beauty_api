@@ -42,7 +42,7 @@ ALLOWED_ORIGINS = [
     o.strip()
     for o in os.getenv(
         "ALLOWED_ORIGINS",
-        "https://411277024.github.io,http://127.0.0.1:8000,http://localhost:8000",
+        "https://411277024.github.io,http://127.0.0.1:8000,http://localhost:8000,http://localhost:5173",
     ).split(",")
     if o.strip()
 ]
